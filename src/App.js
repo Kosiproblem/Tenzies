@@ -9,15 +9,25 @@ function App() {
   const [tenzies, setTenzies] = React.useState(false);
   const [roll, setRolls] = React.useState(0);
   const [startTime, setStartTime] = React.useState(null);
+  const [endTime, setEndTime] = React.useState(null);
+  const [highScore, setHighScore] = React.useState(
+    JSON.parse(localStorage.getItem("highScore")) || Infinity
+  );
 
   React.useEffect(() => {
     const everyDie = dice.every((die) => die.isHeld);
     const firstDie = dice[0].value;
     const allDiceMatch = dice.every((die) => die.value === firstDie);
     if (everyDie && allDiceMatch) {
+      setEndTime(performance.now());
+      if (timeDiff !== null && timeDiff < highScore) {
+        setHighScore(timeDiff);
+        localStorage.setItem("highScore", timeDiff);
+      }
+
       setTenzies(true);
     }
-  }, [dice]);
+  }, [dice, highScore, tenzies]);
 
   function getNewDice() {
     return {
@@ -43,20 +53,17 @@ function App() {
         })
       );
 
-      setStartTime(performance.now());
-      console.log(`Start: ${startTime}`);
+      if (startTime === null) {
+        setStartTime(performance.now());
+      }
 
       setRolls((prevTime) => prevTime + 1);
     } else {
       setTenzies(false);
       setDice(allNewDice());
       setRolls(0);
-
-      if (startTime !== null) {
-        const endTime = performance.now();
-        const timeDiff = endTime - startTime;
-        return timeDiff;
-      }
+      setStartTime(null);
+      setEndTime(null);
     }
   }
 
@@ -75,10 +82,15 @@ function App() {
       hold={() => holdDice(die.id)}
     />
   ));
+  const timeDiff = endTime && startTime ? (endTime - startTime) / 1000 : null;
 
-  // function newGame() {
-  //   setDice(dice);
-  // }
+  function timeUsed() {
+    if (timeDiff === null) {
+      return "N/A";
+    } else {
+      return `${timeDiff} secs`;
+    }
+  }
   console.log(dice);
   return (
     <div className="App flex">
@@ -91,9 +103,9 @@ function App() {
             at its current value <br /> between rolls
           </h5>
           <h1 className="text-center mb-3">No of Rolls: {roll}</h1>
+          <h1 className="text-center mb-3">Time used: {timeUsed()}</h1>
           <h1 className="text-center mb-3">
-            Time used:{" "}
-            {startTime !== null ? (performance.now() - startTime) / 1000 : 0}
+            High Score: {JSON.parse(localStorage.getItem("highScore"))} secs
           </h1>
           <div className="grid grid-cols-5 gap-3">{diceElem}</div>
           <div className="flex mt-5">
